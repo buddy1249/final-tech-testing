@@ -1,0 +1,26 @@
+{% extends 'base.html'%}
+
+   
+{% block content %}
+<h2>{{ genus }}</h2>
+<h2>{{ exam.title }}</h2>
+<form method="POST">
+    {% csrf_token %}
+    {% for question in questions %}
+        <div class="question-block">
+            <p><b>{{ forloop.counter }}.</b><b>{{ question.text }}</b></p>
+            {% for answer in question.answers.all %}
+                <label>
+                    <input type="radio" name="question_{{ question.id }}" value="{{ answer.id }}">
+                    {{ answer.text }}
+                </label><br>
+            {% endfor %}
+        </div>
+        <hr>
+    {% endfor %}
+    <button type="submit">Завершить тестирование</button>
+</form>
+    
+            
+{%endblock%}
+

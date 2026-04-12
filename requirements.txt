@@ -1,0 +1,9 @@
+asarPy==1.0.1
+iniconfig==2.3.0
+packaging==26.0
+pluggy==1.6.0
+pytest==7.3.2
+asgiref==3.11.0
+Django==4.2.1
+sqlparse==0.5.5
+gunicorn==21.2.0

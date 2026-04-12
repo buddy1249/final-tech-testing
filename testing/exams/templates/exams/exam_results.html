@@ -1,0 +1,29 @@
+{% extends 'base.html'%}
+
+   
+{% block content %}
+{% if result %}
+<h2>{{ exam.title }}</h2>   
+
+<p>Вид тестирования: <a class="a">{{ result.test_species }}</a></p>
+
+    <p>Работник АГНКС: <a class="a">{{ result.user.username }}</a></p>
+    <!-- <p>Баллы: {{ result.score }} из {{ exam.questions.count }}</p> -->
+    <p>Вопросов в тесте: <a class="a">5</a></p>
+    <p> Правильных ответов: <a class="a">{{ result.score }}</a></p>
+    <!-- <p>Дата прохождения: {{ result.date_taken }}</p> -->
+    <p>Дата: <a class="a">{{ date_taken }}</a></p>    
+{% else %}
+    <p>Результаты не найдены.</p>
+{% endif %}
+
+{% for r in rr %}
+<li>
+    {{ r }}
+</li>
+
+{% endfor %}
+    
+            
+{%endblock%}
+

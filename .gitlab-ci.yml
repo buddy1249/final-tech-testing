@@ -1,0 +1,37 @@
+stages:
+  - build
+  - test
+  - deploy
+
+build-job:
+  stage: build
+  script:
+    - docker build -t testing-backend-image .
+
+test-job:
+  stage: test
+  script:
+    - docker run --rm testing-backend-image python manage.py test
+     
+
+deploy-job:
+  stage: deploy
+  script:
+    # 1. Создаем бэкап (используем правильный путь: /home/ubuntu12/sqlite_data)
+    - docker run --rm -v /home/ubuntu12/sqlite_data:/backup_dir alpine sh -c "[ -f /backup_dir/db.sqlite3 ] && cp /backup_dir/db.sqlite3 /backup_dir/db.sqlite3.bak_$(date +%F_%H-%M) || echo 'Base not found, skipping backup'"
+    
+    # 2. Очистка старых (более 10)
+    - docker run --rm -v /home/ubuntu12/sqlite_data:/backup_dir alpine sh -c "ls -t /backup_dir/db.sqlite3.bak_* 2>/dev/null | tail -n +11 | xargs -r rm -f"
+    
+    # 3. Деплой
+    - docker compose up -d --build
+    - docker compose exec -T backend python manage.py collectstatic --noinput
+
+
+
+
+
+
+
+
+

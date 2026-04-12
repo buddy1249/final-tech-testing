@@ -1,0 +1,85 @@
+/*  Заголовок в поле собственый коммерческий СМЕНА */
+.h1 {
+	color:rgb(0, 43, 128);	
+	
+}
+
+.container {	
+display: flex;
+flex-direction: column;
+margin: 0;
+}
+
+.container2 {
+	display: flex;
+	flex-direction: column-count;	
+	
+	}
+
+/* Контейнер верхний Главная стр... и тд  */
+.item  {	
+	width: 100%;
+	padding: 1px;	
+	background-color:  rgb(232, 168, 64); 	/* фон контейнера верхнего */	
+	border: 1px solid #ccc;
+	margin-bottom: 0px; /* Зазоры между контейнерами */	
+	font-size: 20px;  /* Размер текста верхнего меню */	
+	font-weight: bold;
+	/* text-align: right; */
+}
+
+
+
+/* Контейнер слева */	
+.item1 {
+	width: 20%;
+	padding: 1px;	
+	background-color:  rgb(64, 204, 232); 	/* фон контейнера слева */	
+	border: 1px solid #ccc;	
+	margin-bottom: 0px; /* Зазоры между контейнерами */	
+	
+}
+/* Контейнер справа */
+.item2 {
+	width: 80%;
+	padding: 1px;	
+	border: 1px solid #ccc;
+	margin-bottom: 5px;
+	
+}
+
+
+
+header {
+background: linear-gradient(#FFFAFA, #FAEBD7);
+
+}
+
+ul {
+list-style: none;
+margin: 0;
+padding: 20px;
+}
+
+/* цвет текста верхнего меню */
+a {
+fond-size: 40px;
+padding: 20px;
+color: hwb(219 18% 43% / 0.985);
+text-decoration: none;
+
+}
+
+a:hover{
+color: #FFCF48;
+text-decoration: none;
+
+}
+
+li{
+display: inline;
+
+}
+
+
+

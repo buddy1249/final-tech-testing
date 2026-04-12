@@ -1,0 +1,59 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>   
+<header align = "center"> 
+<!-- <link type="text/css" href="{% static 'exams/css/styles.css' %}" rel="stylesheet"/>    -->
+
+<div class="container">
+    <div class="item">
+       
+        <table>   
+            <ul >                
+                <li><a href="/">Главная</a></li >
+                <li><a>|</a></li>                
+                <li><a href="/ats_today/">Смена </a></li>
+                <li><a>|</a></li>                  
+                <li ><a href="/ds_report/11">Отчет в ДС</a></li>
+                <li><a>|</a></li>                
+                <li><a href="/cancellation/10" >Селектор</a></li>
+                <li><a>|</a></li>
+                <li><a href="/money">our money</a></li> 
+                <li><a>|</a></li>   
+                <li><a href="/money_transneft/10">our money_transneft</a></li> 
+                <li><a>|</a></li>          
+                <li><a href='#'>Войти</a></li> 
+                <li><a>|</a></li>
+                <!-- <li><a href="/users/login/">Выйти</a></li> 
+                <li><a>|</a></li>                 -->
+                </form>
+                </li>
+                
+                
+                </br>  
+
+            </ul>
+        </table> 
+    </div>
+    <div class="container2"> 
+    <div class="item1">
+          <h1>dfghjk</h1> 
+    </div>
+    <div class="item2">
+        {% block content %}   
+         
+        {%endblock%}
+    </div>
+</div>
+</div>
+
+
+</header>   
+<title>{% block title %} {%endblock%}</title>
+</head>
+<body > 
+   
+
+
+</body>
+</html>

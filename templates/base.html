@@ -1,0 +1,66 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+    <link type="text/css" href="{% static 'exams/css/styles.css' %}" rel="stylesheet"/>    
+</head> 
+
+<body> 
+
+    <div class="container">
+        <div class="container2">
+        <div class="item">
+           
+            <table>   
+                <ul >                
+                    <li><a href="/">Главная</a></li >
+                    <li><a>|</a></li>    
+                    <li><a href="/results_all">Итоговый протокол</a></li >
+                    <li><a>|</a></li>              
+                    <!-- <li><a href="/ats_today/">Смена </a></li>
+                    <li><a>|</a></li>                  
+                    <li ><a href="/ds_report/11">Отчет в ДС</a></li>
+                    <li><a>|</a></li>                
+                    <li><a href="/cancellation/10" >Селектор</a></li>
+                    <li><a>|</a></li>
+                    <li><a href="/money">our money</a></li> 
+                    <li><a>|</a></li>   
+                    <li><a href="/money_transneft/10">our money_transneft</a></li> 
+                    <li><a>|</a></li>  -->
+                    <!-- <div class="item_right"> -->
+                        {% if user.is_authenticated %} 
+                    <li style="float: right;">{{ user.username }} | <a href="{% url 'users:logout'%}" >Выйти</a></li>  
+                    {% else %}
+                    <li style="float: right;"><a href="{% url 'users:login'%}">Войти</a> | <a href="#">Регистрация</a></li>
+                    {% endif %} 
+                    <!-- <li ><a style="float: right;">dddd</a></li> -->
+                    <!-- </div> -->
+                                                                      
+                                       
+    
+                </ul>
+            </table> 
+        </div>
+    </div>
+        <div class="container2"> 
+            <div class="item1">
+                <h2>Тестирование</h3> 
+                    {% include 'exams/includes/nav_ds.html' %}
+            </div>
+        <div class="item2">
+            {% block content %}   
+             
+            {%endblock%}
+        </div>
+    </div>
+    </div>
+      
+
+   
+    
+    
+
+
+</body>
+
+</html>

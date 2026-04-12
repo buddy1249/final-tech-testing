@@ -1,0 +1,40 @@
+{% extends 'base.html'%}
+
+   
+{% block content %}
+<h2>Результаты тестирования по техучебе</h2>
+<div class="item2"> 
+    
+ <table class="table">
+            <thead>
+                <tr>
+                    <th>id</th>
+                    <th>работник АГНКС</th>
+                    <th>тема занятий</th>
+                    <th>вид тестирования</th>  
+                    <th>правильных ответов из 5 вопросов</th>             
+                    <th>дата</th>                    
+                </tr>
+        
+        
+            </thead>
+                
+            <tbody>
+                {% for item in result_all %}
+            <tr>
+                <td>{{ item.id }}</td>
+                <td>{{ item.user }}</td>
+                <td>{{ item.exam }}</td>
+                <td>{{ item.test_species }}</td> 
+                <td>{{ item.score }}</td>                          
+                <td>{{ item.date_taken|date:'d.m.Y' }}</td>               
+        
+            </tr>
+
+            {%endfor%}
+            </tbody>
+ </table>
+
+ </div
+
+{%endblock%}
