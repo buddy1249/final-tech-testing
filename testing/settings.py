@@ -32,7 +32,7 @@ DEBUG = False
 STATIC_ROOT = '/app_testing/staticfiles' 
 STATIC_URL = '/static/'
 
-ALLOWED_HOSTS = ['155.212.222.63', 'localhost', '127.0.0.1', 'witdevel.ru', 'www.witdevel.ru']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'witdevel.ru', 'www.witdevel.ru']
 
 CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_SECURE = True
