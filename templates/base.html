@@ -16,27 +16,13 @@
                     <li><a href="/">Главная</a></li >
                     <li><a>|</a></li>    
                     <li><a href="/results_all">Итоговый протокол</a></li >
-                    <li><a>|</a></li>              
-                    <!-- <li><a href="/ats_today/">Смена </a></li>
-                    <li><a>|</a></li>                  
-                    <li ><a href="/ds_report/11">Отчет в ДС</a></li>
-                    <li><a>|</a></li>                
-                    <li><a href="/cancellation/10" >Селектор</a></li>
-                    <li><a>|</a></li>
-                    <li><a href="/money">our money</a></li> 
-                    <li><a>|</a></li>   
-                    <li><a href="/money_transneft/10">our money_transneft</a></li> 
-                    <li><a>|</a></li>  -->
-                    <!-- <div class="item_right"> -->
+                    <li><a>|</a></li>                       
                         {% if user.is_authenticated %} 
                     <li style="float: right;">{{ user.username }} | <a href="{% url 'users:logout'%}" >Выйти</a></li>  
                     {% else %}
                     <li style="float: right;"><a href="{% url 'users:login'%}">Войти</a> | <a href="#">Регистрация</a></li>
-                    {% endif %} 
-                    <!-- <li ><a style="float: right;">dddd</a></li> -->
-                    <!-- </div> -->
-                                                                      
-                                       
+                    {% endif %}                                                                       
+                        
     
                 </ul>
             </table> 
