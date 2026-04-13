@@ -2,7 +2,7 @@ import random
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
-from django.http import HttpRequest, HttpResponse # Важно для типизации
+from django.http import HttpRequest, HttpResponse
 from .models import Exam, Answer, Result
 
 def index(request: HttpRequest) -> HttpResponse:
