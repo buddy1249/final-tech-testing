@@ -78,3 +78,12 @@
    mkdir -p sqlite_data static_root
    sudo chown -R 1000:1000 sqlite_data static_root
 # final-tech-testing
+
+## 🚀 Локальная установка и настройка не в docker
+1. Клонирование репозитория.
+2. Настройка конфигурации settings.py для работы на localhost
+3. Запуск на сервере хоста
+4. Настройка admin
+5. Конфигурирование
+
+
