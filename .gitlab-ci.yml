@@ -17,7 +17,7 @@ test-job:
 deploy-job:
   stage: deploy
   script:
-    # 1. Создаем бэкап (используем правильный путь: /home/ubuntu12/sqlite_data)
+    # 1. Создаем бэкап 
     - docker run --rm -v /home/ubuntu12/sqlite_data:/backup_dir alpine sh -c "[ -f /backup_dir/db.sqlite3 ] && cp /backup_dir/db.sqlite3 /backup_dir/db.sqlite3.bak_$(date +%F_%H-%M) || echo 'Base not found, skipping backup'"
     
     # 2. Очистка старых (более 10)
