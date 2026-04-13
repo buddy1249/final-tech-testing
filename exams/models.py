@@ -2,27 +2,27 @@ from django.db import models
 from django.contrib.auth.models import User
 
 class Exam(models.Model):
-    """Модель учебного экзамена."""
-    title = models.CharField(max_length=200, verbose_name="Название экзамена")
+    """Модель учебного теста."""
+    title = models.CharField(max_length=200, verbose_name="Название теста")
     duration = models.PositiveIntegerField(
         help_text="Продолжительность в минутах", 
         verbose_name="Время на прохождение"
     )
 
     class Meta:
-        verbose_name = "Экзамен"
-        verbose_name_plural = "Экзамены"
+        verbose_name = "Тесты"
+        verbose_name_plural = "Тесты"
 
     def __str__(self):
         return self.title
 
 class Question(models.Model):
-    """Вопросы, привязанные к конкретному экзамену."""
+    """Вопросы, привязанные к конкретному тесту."""
     exam = models.ForeignKey(
         Exam, 
         related_name='questions', 
         on_delete=models.CASCADE, 
-        verbose_name="Экзамен"
+        verbose_name="Тест"
     )
     text = models.TextField(verbose_name="Текст вопроса")
 
@@ -55,7 +55,7 @@ class Answer(models.Model):
 class Result(models.Model):
     """Результаты прохождения тестирования пользователями."""
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Пользователь")
-    exam = models.ForeignKey(Exam, on_delete=models.CASCADE, verbose_name="Экзамен")
+    exam = models.ForeignKey(Exam, on_delete=models.CASCADE, verbose_name="Тест")
     test_species = models.CharField(
         max_length=200, 
         default='Входное тестирование', 
