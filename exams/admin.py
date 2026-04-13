@@ -1,14 +1,3 @@
-# from django.contrib import admin
-# from .models import Exam, Question, Answer, Result
-# # Register your models here.
-
-# admin.site.register(Exam)
-# admin.site.register(Question)
-# admin.site.register(Answer)
-# admin.site.register(Result)
-
-
-
 from django.contrib import admin
 from .models import Exam, Question, Answer, Result
 
@@ -22,7 +11,7 @@ class QuestionAdmin(admin.ModelAdmin):
     list_display = ('text', 'exam')
     list_filter = ('exam',)
     search_fields = ('text',)
-    inlines = [AnswerInline]  # Теперь ответы создаются на той же странице, что и вопрос
+    inlines = [AnswerInline]  # Ответы создаются на той же странице, что и вопрос
 
 @admin.register(Exam)
 class ExamAdmin(admin.ModelAdmin):
@@ -44,4 +33,3 @@ class ResultAdmin(admin.ModelAdmin):
     # Поля только для чтения (чтобы нельзя было подделать результат в админке)
     readonly_fields = ('date_taken',)
 
-# Простая регистрация для Answer не нужна, так как они в Inline у вопросов
