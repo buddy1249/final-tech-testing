@@ -5,22 +5,15 @@ services:
     networks:
       - my_bridge_net
     expose:
-      - "8001"
-    # 1. Меняем runserver на Gunicorn (убедись, что он есть в requirements.txt)
-    # 'testing'  имя папки, где лежит wsgi.py   
+      - "8001"    
     command: gunicorn --bind 0.0.0.0:8001 testing.wsgi:application
-    # 2. Прокидываем внешнюю папку с базой данных    
-    
+    # 2. Прокидываем внешнюю папку с базой данных      
     volumes:
       - /home/ubuntu12/sqlite_data:/app_testing/db_folder
       - /home/ubuntu12/app_testing/static_root:/app_testing/staticfiles  # Хост : Контейнер
       
     # 3. Добавляем автоматический перезапуск
     restart: always
-    
-    # 4. Прокидываем секреты через переменные (опционально, если используешь .env)
-    #env_file:
-    #  - .env
 
 networks:
   my_bridge_net:
@@ -29,16 +22,6 @@ networks:
 
 
 
-# services:
-#   backend:
-#     image: testing-backend-image:latest
-#     container_name: testing-backend-container
-#     networks:
-#       - my_bridge_net
-#     # ports:
-#     #   - 80:8001
-#     expose:пш
-#       - "8001"
 #     command: "python manage.py runserver 0.0.0.0:8001"
 
 # networks: # создаем сеть
