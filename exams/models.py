@@ -1,74 +1,36 @@
 from django.db import models
 from django.contrib.auth.models import User
 
-class Exam(models.Model):
-    """Модель учебного теста."""
-    title = models.CharField(max_length=200, verbose_name="Название теста")
-    duration = models.PositiveIntegerField(
-        help_text="Продолжительность в минутах", 
-        verbose_name="Время на прохождение"
-    )
+# Create your models here.
 
-    class Meta:
-        verbose_name = "Тесты"
-        verbose_name_plural = "Тесты"
+class Exam(models.Model):
+    title = models.CharField(max_length=200)
+    duration = models.IntegerField(help_text="Продолжительность в минутах")
 
     def __str__(self):
         return self.title
 
 class Question(models.Model):
-    """Вопросы, привязанные к конкретному тесту."""
-    exam = models.ForeignKey(
-        Exam, 
-        related_name='questions', 
-        on_delete=models.CASCADE, 
-        verbose_name="Тест"
-    )
-    text = models.TextField(verbose_name="Текст вопроса")
-
-    class Meta:
-        verbose_name = "Вопрос"
-        verbose_name_plural = "Вопросы"
+    exam = models.ForeignKey(Exam, related_name='questions', on_delete=models.CASCADE)
+    text = models.TextField()
 
     def __str__(self):
-        # Обрезаем текст для админки, чтобы список был читаемым
-        return self.text[:50] + '...' if len(self.text) > 50 else self.text
+        return self.text
 
 class Answer(models.Model):
-    """Варианты ответов на вопросы."""
-    question = models.ForeignKey(
-        Question, 
-        related_name='answers', 
-        on_delete=models.CASCADE, 
-        verbose_name="Вопрос"
-    )
-    text = models.CharField(max_length=200, verbose_name="Текст ответа")
-    is_correct = models.BooleanField(default=False, verbose_name="Правильный ответ")
-
-    class Meta:
-        verbose_name = "Ответ"
-        verbose_name_plural = "Ответы"
+    question = models.ForeignKey(Question, related_name='answers', on_delete=models.CASCADE)
+    text = models.CharField(max_length=200)
+    is_correct = models.BooleanField(default=False)
 
     def __str__(self):
         return self.text
 
 class Result(models.Model):
-    """Результаты прохождения тестирования пользователями."""
-    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Пользователь")
-    exam = models.ForeignKey(Exam, on_delete=models.CASCADE, verbose_name="Тест")
-    test_species = models.CharField(
-        max_length=200, 
-        default='Входное тестирование', 
-        verbose_name="Тип тестирования"
-    )
-    score = models.PositiveIntegerField(verbose_name="Полученный балл")
-    date_taken = models.DateTimeField(auto_now_add=True, verbose_name="Дата прохождения")
-
-    class Meta:
-        verbose_name = "Результат"
-        verbose_name_plural = "Результаты"
-        # Сортировка: самые свежие результаты сверху
-        ordering = ['-date_taken']
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    exam = models.ForeignKey(Exam, on_delete=models.CASCADE)
+    test_species = models.CharField(max_length=200, default='Входное тестирование') # Итоговое или входное тестирование
+    score = models.IntegerField()
+    date_taken = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.user.username} | {self.exam.title} | {self.score}"
+        return f"{self.user.username} - {self.exam.title} - {self.score}"

@@ -1,12 +1,12 @@
 FROM python:3.12-slim
 
-
+# Указываем Python не буферизировать логи (чтобы они сразу летели в docker logs)
 ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app_testing
 
-# 1. Создаем пользователя и папку для базы
-# Используем ID 1000
+# 1. Создаем пользователя и папку для базы заранее
+# Используем ID 1000 
 RUN useradd -m -u 1000 appuser && \
     mkdir -p /app_testing/db_folder && \
     chown -R appuser:appuser /app_testing
@@ -21,7 +21,7 @@ COPY --chown=appuser:appuser . .
 # 4. Переключаемся на пользователя
 USER appuser
 
-
+# Команда запуска (имя папки 'testing' берем из пути к wsgi.py)
 CMD ["gunicorn", "--bind", "0.0.0.0:8001", "testing.wsgi:application"]
 
 

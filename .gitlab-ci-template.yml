@@ -1,0 +1,8 @@
+# .gitlab-ci-template.yml
+.docker_base_template:
+  image: docker:27
+  variables:
+    DOCKER_TLS_CERTDIR: ""
+  before_script:
+    - echo "Использование централизованного шаблона"
+    - docker info

@@ -1,84 +1,99 @@
-import random
-from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import render, redirect, get_object_or_404, HttpResponse
 from django.contrib.auth.decorators import login_required
+from .models import Exam, Question, Answer, Result
+import random
 from django.utils import timezone
-from django.http import HttpRequest, HttpResponse
-from .models import Exam, Answer, Result
 
-def index(request: HttpRequest) -> HttpResponse:
-    """Рендеринг главной страницы сервиса тестирования."""
+from datetime import datetime 
+import datetime
+
+def index(request):
     return render(request, 'exams/index.html')
 
-def start_exam(request: HttpRequest, exam_id: int) -> HttpResponse:
-    """Инициализация начала тестирования."""
+def start_exam(request, exam_id):
     exam = get_object_or_404(Exam, id=exam_id)
+    # Логика начала экзамена, возможно, сохранение времени начала в сессии или БД
     return redirect('take_exam', exam_id=exam.id)
-
+    #return HttpResponse(f'hello: {exam_id}')
+    
 @login_required
-def take_exam(request: HttpRequest, exam_id: int, exam2_id: int = 1) -> HttpResponse:
-    """Логика прохождения тестирования с расчетом баллов."""
+def take_exam(request, exam_id, exam2_id=1):
     exam = get_object_or_404(Exam, id=exam_id)
     questions = exam.questions.all()
     genus = 'Входное тестирование' if exam2_id == 1 else 'Итоговое тестирование'
     
+    print('fff:', genus)
     if request.method == 'POST':
         score = 0
         for question in questions:
-            selected_id = request.POST.get(f'question_{question.id}')
-            if selected_id:
-                # Оптимизация: проверяем правильность одним запросом
-                if Answer.objects.filter(id=selected_id, is_correct=True).exists():
-                    score += 1
+            # Получаем выбранный пользователем ответ для данного вопроса
+            selected_answer_id = request.POST.get(f'question_{question.id}')
+            if selected_answer_id:
+                try:
+                    selected_answer = Answer.objects.get(id=selected_answer_id)
+                    if selected_answer.is_correct:
+                        score += 1
+                except Answer.DoesNotExist:
+                    continue
         
-        # Вместо str(request.user) используем username и выносим в кортеж (быстрее поиск)
-        ALLOWED_USERNAMES = ('root', 'П.П.Петров', 'И.И.Иванов', 'free_user')
-        
-        if request.user.username in ALLOWED_USERNAMES:
-            Result.objects.create(
-                user=request.user, 
-                exam=exam, 
-                score=score, 
-                test_species=genus
-            )
+        # Сохраняем результат       
+        if str(request.user) in ['root', 'К.Н.Васильев', 'И.А.Виноградов', 'free_user']:
+            Result.objects.create(user=request.user, exam=exam, score=score, test_species=genus)            
             return redirect('exam_results', exam_id=exam.id)
+        elif str(request.user) not in ['root', 'К.Н.Васильев', 'И.А.Виноградов', 'free_user']:
+            return render(request, 'exams/default.html')   
+            #return HttpResponse(f'Тестирование доступно только авторизованным пользователям!')
+        else:
+            pass
+    
+    print(type(questions))
+    questions = list(questions)
+    # print(questions)
+    questions = random.sample(questions, 5)
+    for question in questions:
+        for answer in question.answers.all():
+            print(answer)
+    
         
-        return render(request, 'exams/default.html')
-    
-    """Добавляем защиту: min() для исключения падения random.sample 
-       если вопросов в базе меньше 5
-    """ 
-    count = min(questions.count(), 5)
-    sampled_questions = random.sample(list(questions), count) if count > 0 else []
-    
-    return render(request, 'exams/take_exam.html', {
-        'exam': exam, 
-        'questions': sampled_questions, 
-        'genus': genus
-    })
+        
+    return render(request, 'exams/take_exam.html', {'exam': exam, 'questions': questions, 'genus': genus})
 
-@login_required
-def exam_results(request: HttpRequest, exam_id: int) -> HttpResponse:
-    """Вывод итогового результата последнего теста."""
+
+def exam_results(request, exam_id):
     exam = get_object_or_404(Exam, id=exam_id)
     result = Result.objects.filter(user=request.user, exam=exam).order_by('-date_taken').first()
+    rr = Result.objects.all().order_by('-date_taken')
+    for i in rr:
+        print(i.user, i.exam, i.score,  i.date_taken.strftime('%Y-%m-%d'), i.test_species)
+    day = timezone.now().strftime('%Y-%m-%d')
+    print('Время, дата', day, type(day))
     
-    # Защита от случая, когда результата нет в БД
-    if not result:
-        return redirect('index')
+    date_taken = result.date_taken.strftime('%Y-%m-%d')
+    return render(request, 'exams/exam_results.html', {'result': result, 'exam': exam, 'date_taken': date_taken})
 
-    context = {
-        'result': result, 
-        'exam': exam, 
-        'date_taken': result.date_taken.strftime('%Y-%m-%d')
-    }
-    return render(request, 'exams/exam_results.html', context)
-
-#@login_required
-def results_all(request: HttpRequest) -> HttpResponse:
-    """Общий протокол тестирования (доступен только авторизованным, кроме демо)."""    
-    result_all = Result.objects.select_related('user', 'exam').all() # Оптимизация запроса   
+# @login_required
+def results_all(request):    
+    result_all = Result.objects.all()
+    # for i in result_all:
+    #     print(i.id, i.user, i.date_taken, i.test_species, i.score)
     return render(request, 'exams/results_all.html', {'result_all': result_all})
 
-def default(request: HttpRequest) -> HttpResponse:
-    """Страница заглушка/отказа в доступе."""
+
+def default(request):
     return render(request, 'exams/default.html')
+
+
+# def control_db():
+#     exam = get_object_or_404(Exam)
+#     questions = exam.questions.all()
+#     #(type(questions))
+#     questions = list(questions)       
+#     for question in questions:
+#         for answer in question.answers.all():
+#             print(answer)
+
+# print(control_db())            
+
+    # items = Question.objects.all()
+    # for item in items:
+    #     print(item.id, item.user, item.date_taken, item.test_species, item.score)

@@ -1,0 +1,20 @@
+global:
+  scrape_interval: 15s     # Периодичность сборки метрик
+  evaluation_interval: 15s
+
+scrape_configs:
+  # 1. Метрики  Prometheus
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # 2. Метрики контейнеров (CPU, RAM, Сеть) через cAdvisor
+  - job_name: 'docker-containers'
+    static_configs:
+      - targets: ['cadvisor:8080'] # Имя сервиса из docker-compose
+
+  # 3. Метрики Django приложения 
+  - job_name: 'django-backend'
+    metrics_path: '/metrics' 
+    static_configs:
+      - targets: ['backend:8001']

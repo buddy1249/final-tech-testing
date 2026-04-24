@@ -1,23 +1,92 @@
+version: '3.8'
+
 services:
+  # --- БЭКЕНД ---
   backend:
     image: testing-backend-image:latest
     container_name: testing-backend-container
-    networks:
-      - my_bridge_net
+    restart: always
     expose:
-      - "8001"    
+      - "8001"
     command: gunicorn --bind 0.0.0.0:8001 testing.wsgi:application
-    # 2. Прокидываем внешнюю папку с базой данных      
     volumes:
       - /home/ubuntu12/sqlite_data:/app_testing/db_folder
-      - /home/ubuntu12/app_testing/static_root:/app_testing/staticfiles  # Хост : Контейнер
-      
-    # 3. Добавляем автоматический перезапуск
+      - /home/ubuntu12/app_testing/static_root:/app_testing/staticfiles
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - my_bridge_net
+
+  # --- МОНИТОРИНГ КОНТЕЙНЕРОВ ---
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.47.0
+    container_name: cadvisor
     restart: always
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    networks:
+      - my_bridge_net
+
+  # --- МОНИТОРИНГ (METRICS) ---
+  prometheus:
+    image: prom/prometheus:v2.45.0
+    container_name: prometheus
+    restart: always
+    volumes:
+      # Файл лежит внутри папки app_testing
+      - /home/ubuntu12/app_testing/prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=7d'
+    networks:
+      - my_bridge_net
+
+  # --- ЛОГИРОВАНИЕ (LOGS) ---
+  loki:
+    image: grafana/loki:2.9.0
+    container_name: loki
+    restart: always
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - my_bridge_net
+
+  promtail:
+    image: grafana/promtail:2.9.0
+    container_name: promtail
+    restart: always
+    volumes:
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      # Файл лежит внутри папки app_testing
+      - /home/ubuntu12/app_testing/promtail-config.yml:/etc/promtail/config.yml
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - my_bridge_net
+
+  # --- ВИЗУАЛИЗАЦИЯ ---
+  grafana:
+    image: grafana/grafana-oss:latest
+    container_name: grafana
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    networks:
+      - my_bridge_net
 
 networks:
   my_bridge_net:
     external: true
+
 
 
 

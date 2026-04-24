@@ -1,0 +1,510 @@
+---
+- name: Deploy Backend and Refresh Nginx
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    # 1. Создаем структуру папок
+    - name: Ensure directories exist
+      file:
+        path: "{{ item }}"
+        state: directory
+        mode: '0755'
+      loop:
+        - "/home/ubuntu12/app_testing"
+        - "/home/ubuntu12/sqlite_data"
+
+    # 2. ЖЕСТКАЯ ОЧИСТКА (Решает проблему "Not a directory" и "Name conflict")
+    - name: Force cleanup old containers and ghost directories
+      shell: |
+        docker rm -f cadvisor promtail prometheus loki grafana testing-backend-container || true
+        rm -rf /home/ubuntu12/app_testing/prometheus.yml
+        rm -rf /home/ubuntu12/app_testing/promtail-config.yml
+      ignore_errors: yes
+
+    # 3. Копирование файлов из репозитория на сервер
+    - name: Copy deployment files
+      copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        mode: '0644'
+        force: yes
+      loop:
+        - { src: "docker-compose.yml", dest: "/home/ubuntu12/app_testing/docker-compose.yml" }
+        - { src: "prometheus.yml", dest: "/home/ubuntu12/app_testing/prometheus.yml" }
+        - { src: "promtail-config.yml", dest: "/home/ubuntu12/app_testing/promtail-config.yml" }
+
+    # 4. Запуск стека через Docker Compose
+    - name: Up Backend Stack
+      community.docker.docker_compose_v2:
+        project_src: "/home/ubuntu12/app_testing"
+        state: present
+        recreate: always
+        wait: yes
+        timeout: 120
+
+    # 5. Рестарт твоего Nginx (который живет отдельно)
+    - name: Restart standalone Nginx
+      community.docker.docker_container:
+        name: app-nginx-nginx_web-testing-1
+        state: started
+        restart: yes 
+      ignore_errors: yes
+
+    # 6. Выполнение команд Django
+    - name: Run django tasks
+      community.docker.docker_container_exec:
+        container: testing-backend-container
+        command: "{{ item }}"
+      loop:
+        - "python manage.py migrate --noinput"
+        - "python manage.py collectstatic --noinput"
+
+
+
+# ---
+# - name: Deploy Backend and Refresh Nginx
+#   hosts: all
+#   gather_facts: false
+
+#   tasks:
+#     # 1. Создаем структуру папок (только необходимые)
+#     - name: Ensure directories exist
+#       file:
+#         path: "{{ item }}"
+#         state: directory
+#         mode: '0755'
+#       loop:
+#         - "/home/ubuntu12/app_testing"
+#         - "/home/ubuntu12/sqlite_data"
+
+#     # 2. Удаляем старые конфиги мониторинга, чтобы избежать ошибок монтирования
+#     - name: Remove old monitor configs
+#       file:
+#         path: "{{ item }}"
+#         state: absent
+#       loop:
+#         - "/home/ubuntu12/app_testing/prometheus.yml"
+#         - "/home/ubuntu12/app_testing/promtail-config.yml"
+
+#     # 3. Копируем только те файлы, которые есть в репозитории
+#     - name: Copy deployment files
+#       copy:
+#         src: "{{ item.src }}"
+#         dest: "{{ item.dest }}"
+#         mode: '0644'
+#       loop:
+#         - { src: "docker-compose.yml", dest: "/home/ubuntu12/app_testing/docker-compose.yml" }
+#         - { src: "prometheus.yml", dest: "/home/ubuntu12/app_testing/prometheus.yml" }
+#         - { src: "promtail-config.yml", dest: "/home/ubuntu12/app_testing/promtail-config.yml" }
+
+#     # 4. Запуск бэкенд-стека (Backend + Monitoring)
+#     - name: Up Backend Stack
+#       community.docker.docker_compose_v2:
+#         project_src: "/home/ubuntu12/app_testing"
+#         state: present
+#         recreate: always
+
+#     # 5. Рестарт Nginx, чтобы он обновил соединение с новым контейнером бэкенда
+#     - name: Restart standalone Nginx
+#       community.docker.docker_container:
+#         name: app-nginx-nginx_web-testing-1
+#         state: started
+#         restart: yes 
+#       ignore_errors: yes
+
+#     # 6. Django команды внутри контейнера
+#     - name: Run django tasks
+#       community.docker.docker_container_exec:
+#         container: testing-backend-container
+#         command: "{{ item }}"
+#       loop:
+#         - "python manage.py migrate --noinput"
+#         - "python manage.py collectstatic --noinput"
+
+
+
+# ---
+# - name: Deploy Backend and Refresh Nginx
+#   hosts: all
+#   gather_facts: false
+
+#   tasks:
+#     # 1. Создаем структуру папок
+#     - name: Ensure directories exist
+#       file:
+#         path: "{{ item }}"
+#         state: directory
+#         mode: '0755'
+#       loop:
+#         - "/home/ubuntu12/app_testing"
+#         - "/home/ubuntu12/app-nginx/nginx/conf"
+#         - "/home/ubuntu12/sqlite_data"
+
+#     # 2. Удаляем старые конфиги (чтобы не было ошибки "not a directory")
+#     - name: Remove old files/folders
+#       file:
+#         path: "{{ item }}"
+#         state: absent
+#       loop:
+#         - "/home/ubuntu12/app_testing/prometheus.yml"
+#         - "/home/ubuntu12/app_testing/promtail-config.yml"
+#         - "/home/ubuntu12/app-nginx/nginx/conf/default.conf"
+
+#     # 3. Копируем файлы по их реальным местам
+#     - name: Copy deployment files
+#       copy:
+#         src: "{{ item.src }}"
+#         dest: "{{ item.dest }}"
+#         mode: '0644'
+#       loop:
+#         # Бэкенд и мониторинг
+#         - { src: "docker-compose.yml", dest: "/home/ubuntu12/app_testing/docker-compose.yml" }
+#         - { src: "prometheus.yml", dest: "/home/ubuntu12/app_testing/prometheus.yml" }
+#         - { src: "promtail-config.yml", dest: "/home/ubuntu12/app_testing/promtail-config.yml" }
+#         # Nginx
+#         - { src: "default.conf", dest: "/home/ubuntu12/app-nginx/nginx/conf/default.conf" }
+
+#     # 4. Запуск бэкенд-стека (Prometheus, Loki, Backend)
+#     - name: Up Backend Stack
+#       community.docker.docker_compose_v2:
+#         project_src: "/home/ubuntu12/app_testing"
+#         state: present
+#         recreate: always
+
+#     # 5. Перезапуск Nginx (именно RECREATE, чтобы подхватить изменения путей)
+#     # ВАЖНО: Если у Nginx свой docker-compose.yml, укажи путь к его папке здесь:
+#     - name: Recreate Nginx container
+#       community.docker.docker_container:
+#         name: app-nginx-nginx_web-testing-1
+#         state: started
+#         restart: yes 
+#       ignore_errors: yes
+
+#     # 6. Django команды
+#     - name: Run django tasks
+#       community.docker.docker_container_exec:
+#         container: testing-backend-container
+#         command: "{{ item }}"
+#       loop:
+#         - "python manage.py migrate --noinput"
+#         - "python manage.py collectstatic --noinput"
+
+
+
+
+
+
+# ---
+# - name: Deploy Backend Application
+#   hosts: all
+#   gather_facts: false
+
+#   tasks:
+#     # 1. Подготовка базовых директорий
+#     - name: Ensure base directories exist
+#       file:
+#         path: "{{ item }}"
+#         state: directory
+#         mode: '0755'
+#       loop:
+#         - "/home/ubuntu12"
+#         - "/home/ubuntu12/sqlite_data"
+#         - "/home/ubuntu12/app_testing"
+#         - "/home/ubuntu12/app_testing/static_root"
+
+#     # 2. Остановка стека, чтобы освободить файлы
+#     - name: Stop existing stack
+#       community.docker.docker_compose_v2:
+#         project_src: /home/ubuntu12/
+#         state: absent
+#       ignore_errors: yes
+
+#     # 3. Жесткая зачистка перед копированием
+#     - name: Remove accidental directories and old configs
+#       file:
+#         path: "{{ item }}"
+#         state: absent
+#       loop:
+#         - "/home/ubuntu12/prometheus.yml"
+#         - "/home/ubuntu12/promtail-config.yml"
+#         - "/home/ubuntu12/docker-compose.yml"
+#         - "/home/ubuntu12/app-nginx/nginx/conf/default.conf" # УДАЛЯЕМ папку-ошибку
+
+#     # Создаем структуру папок для Nginx (если вдруг удалилась лишняя)
+#     - name: Recreate nginx config dir
+#       file:
+#         path: "/home/ubuntu12/app-nginx/nginx/conf"
+#         state: directory
+#         mode: '0755'
+
+#     # 4. Копируем ВСЕ файлы на сервер
+#     - name: Copy files
+#       copy:
+#         src: "{{ item.src }}"
+#         dest: "{{ item.dest }}"
+#         mode: '0644'
+#       loop:
+#         - { src: "docker-compose.yml", dest: "/home/ubuntu12/docker-compose.yml" }
+#         - { src: "prometheus.yml", dest: "/home/ubuntu12/prometheus.yml" }
+#         - { src: "promtail-config.yml", dest: "/home/ubuntu12/promtail-config.yml" }
+#         - { src: "default.conf", dest: "/home/ubuntu12/app-nginx/nginx/conf/default.conf" }
+
+
+#     # 5. Запуск стека (теперь Docker увидит файлы, а не папки)
+#     - name: Up and Recreate Containers
+#       community.docker.docker_compose_v2:
+#         project_src: /home/ubuntu12/
+#         state: present
+#         build: always
+#         recreate: always
+#         timeout: 120
+
+#     # 6. Перезапуск Nginx (опционально, для обновления IP)
+#     - name: Restart Nginx container
+#       community.docker.docker_container:
+#         name: app-nginx-nginx_web-testing-1
+#         state: started
+#         restart: yes
+#       ignore_errors: yes
+
+#     # 7. Миграции и статика
+#     - name: Run django migrations and collectstatic
+#       community.docker.docker_container_exec:
+#         container: testing-backend-container
+#         command: "{{ item }}"
+#       loop:
+#         - "python manage.py migrate --noinput"
+#         - "python manage.py collectstatic --noinput"
+
+
+
+
+
+
+# ---
+# - name: Deploy Backend Application
+#   hosts: all
+#   gather_facts: false
+
+#   tasks:
+#     # 1. Подготовка базовых директорий на сервере
+#     - name: Ensure base directories exist
+#       file:
+#         path: "{{ item }}"
+#         state: directory
+#         mode: '0755'
+#       loop:
+#         - "/home/ubuntu12"
+#         - "/home/ubuntu12/sqlite_data"
+#         - "/home/ubuntu12/app_testing"
+#         - "/home/ubuntu12/app_testing/static_root"
+
+#     # 2. Остановка стека (чтобы Docker отпустил заблокированные файлы/папки)
+#     - name: Stop existing stack
+#       community.docker.docker_compose_v2:
+#         project_src: /home/ubuntu12/
+#         state: absent
+#       ignore_errors: yes
+
+#     # 3. Жесткая зачистка артефактов (удаляем папки-призраки)
+#     - name: Remove accidental directories to prevent mount errors
+#       file:
+#         path: "/home/ubuntu12/{{ item }}"
+#         state: absent
+#       loop:
+#         - prometheus.yml
+#         - promtail-config.yml
+#         - docker-compose.yml
+
+#     # 4. Копирование свежих конфигурационных файлов
+#     - name: Copy deployment files to server
+#       copy:
+#         src: "{{ item }}"
+#         dest: "/home/ubuntu12/{{ item }}"
+#         mode: '0644'
+#       loop:
+#         - docker-compose.yml
+#         - prometheus.yml
+#         - promtail-config.yml
+
+#     # 5. Запуск обновленного стека контейнеров
+#     - name: Up and Recreate Containers
+#       community.docker.docker_compose_v2:
+#         project_src: /home/ubuntu12/
+#         state: present
+#         build: always
+#         recreate: always
+#         timeout: 120
+
+#     # 6. Решение проблемы 502: Перезапуск Nginx для обновления upstream IP
+#     - name: Restart Nginx container
+#       community.docker.docker_container:
+#         name: app-nginx-nginx_web-testing-1
+#         state: started
+#         restart: yes
+#       ignore_errors: yes
+
+#     # 7. Финальные задачи внутри контейнера Django
+#     - name: Run django migrations and collectstatic
+#       community.docker.docker_container_exec:
+#         container: testing-backend-container
+#         command: "{{ item }}"
+#       loop:
+#         - "python manage.py migrate --noinput"
+#         - "python manage.py collectstatic --noinput"
+
+
+
+
+
+
+# ---
+# - name: Deploy Backend Application
+#   hosts: all
+#   gather_facts: false
+
+#   tasks:
+#     # 1. Сначала останавливаем всё, чтобы Docker отпустил монтирование
+#     - name: Stop stack
+#       community.docker.docker_compose_v2:
+#         project_src: /home/ubuntu12/
+#         state: absent
+#       ignore_errors: yes
+
+#     # 2. ЖЕСТКАЯ ОЧИСТКА (удаляем всё, что Docker мог создать как папку)
+#     - name: Force remove paths to prevent 'not a directory' error
+#       file:
+#         path: "/home/ubuntu12/{{ item }}"
+#         state: absent
+#       loop:
+#         - prometheus.yml
+#         - promtail-config.yml
+#         - docker-compose.yml
+
+#     # 3. КОПИРУЕМ ФАЙЛЫ (теперь они точно лягут как файлы)
+#     - name: Copy configs
+#       copy:
+#         src: "{{ item }}"
+#         dest: "/home/ubuntu12/{{ item }}"
+#         mode: '0644'
+#       loop:
+#         - docker-compose.yml
+#         - prometheus.yml
+#         - promtail-config.yml
+
+#     # 4. ЗАПУСК
+#     - name: Up and Recreate Containers
+#       community.docker.docker_compose_v2:
+#         project_src: /home/ubuntu12/
+#         state: present
+#         build: always
+#         recreate: always
+#         timeout: 120
+
+#     # 5. ПЕРЕЗАПУСК NGINX (Решаем проблему 502)
+#     - name: Restart Nginx to refresh upstream IP
+#       community.docker.docker_container:
+#         name: app-nginx-nginx_web-testing-1
+#         state: started
+#         restart: yes
+#       ignore_errors: yes
+
+#     # 6. МИГРАЦИИ И СТАТИКА
+#     - name: Post-deploy tasks
+#       community.docker.docker_container_exec:
+#         container: testing-backend-container
+#         command: "{{ item }}"
+#       loop:
+#         - "python manage.py migrate --noinput"
+#         - "python manage.py collectstatic --noinput"
+
+
+    
+    
+    
+    
+    
+    
+    
+    
+    # - name: Copy Compose
+    #   copy:
+    #     src: docker-compose.yml
+    #     dest: /home/ubuntu12/docker-compose.yml
+    #     force: yes
+
+    # - name: Copy Prometheus
+    #   copy:
+    #     src: prometheus.yml
+    #     dest: /home/ubuntu12/prometheus.yml
+    #     force: yes
+
+    # - name: Copy Promtail
+    #   copy:
+    #     src: promtail-config.yml
+    #     dest: /home/ubuntu12/promtail-config.yml
+    #     force: yes
+
+
+# ---
+# - name: Deploy Backend Application
+#   hosts: all
+#   gather_facts: false
+
+#   tasks:
+#     - name: Ensure directories exist
+#       file:
+#         path: "{{ item }}"
+#         state: directory
+#         mode: '0755'
+#       loop:
+#         - "/home/ubuntu12/sqlite_data"
+#         - "/home/ubuntu12/app_testing/static_root"
+
+#     # --- ШАГ 1: ПОЛНАЯ ОСТАНОВКА (чтобы Docker отпустил заблокированные файлы) ---
+#     - name: Stop and down existing stack
+#       community.docker.docker_compose_v2:
+#         project_src: /home/ubuntu12/
+#         state: absent
+#       ignore_errors: yes
+
+#     # --- ШАГ 2: ГАРАНТИРОВАННОЕ УДАЛЕНИЕ ОШИБОЧНЫХ ПАПОК ---
+#     - name: Force remove accidental directories
+#       file:
+#         path: "/home/ubuntu12/{{ item }}"
+#         state: absent
+#       loop:
+#         - prometheus.yml
+#         - promtail-config.yml
+#         - docker-compose.yml
+
+#     # --- ШАГ 3: КОПИРОВАНИЕ ЧИСТЫХ КОНФИГОВ ---
+#     - name: Copy deployment files
+#       copy:
+#         src: "{{ item }}"
+#         dest: "/home/ubuntu12/{{ item }}"
+#         mode: '0644'
+#       loop:
+#         - docker-compose.yml
+#         - prometheus.yml
+#         - promtail-config.yml
+
+#     # --- ШАГ 4: ЗАПУСК ВСЕГО СТЕКА ---
+#     - name: Pull and Restart Containers
+#       community.docker.docker_compose_v2:
+#         project_src: /home/ubuntu12/
+#         state: present
+#         build: always
+#         recreate: always
+#         pull: missing
+#         timeout: 120 # Увеличили время ожидания для 1GB RAM
+
+#     # --- ШАГ 5: ПОСТ-ДЕПЛОЙ (Миграции) ---
+#     - name: Run migrations and collectstatic
+#       community.docker.docker_container_exec:
+#         container: testing-backend-container
+#         command: "{{ item }}"
+#       loop:
+#         - "python manage.py migrate --noinput"
+#         - "python manage.py collectstatic --noinput"

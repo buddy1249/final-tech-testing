@@ -1,36 +1,56 @@
+include:
+  - local: '.gitlab-ci-template.yml'
+
 stages:
   - build
   - test
   - deploy
 
+# 1. Сборка
 build-job:
+  extends: .docker_base_template
   stage: build
   script:
     - docker build -t testing-backend-image .
 
+# 2. Тесты 
 test-job:
+  extends: .docker_base_template
   stage: test
+  variables:
+    DOCKER_DRIVER: overlay2 # Переопределяем переменную из шаблона
   script:
     - docker run --rm testing-backend-image python manage.py test
-     
 
-deploy-job:
-  stage: deploy
+# 3. Линтер 
+lint-job:
+  extends: .docker_base_template
+  stage: test
   script:
-    # 1. Создаем бэкап 
-    - docker run --rm -v /home/ubuntu12/sqlite_data:/backup_dir alpine sh -c "[ -f /backup_dir/db.sqlite3 ] && cp /backup_dir/db.sqlite3 /backup_dir/db.sqlite3.bak_$(date +%F_%H-%M) || echo 'Base not found, skipping backup'"
-    
-    # 2. Очистка старых (более 10)
-    - docker run --rm -v /home/ubuntu12/sqlite_data:/backup_dir alpine sh -c "ls -t /backup_dir/db.sqlite3.bak_* 2>/dev/null | tail -n +11 | xargs -r rm -f"
-    
-    # 3. Деплой
-    - docker compose up -d --build
-    - docker compose exec -T backend python manage.py collectstatic --noinput
+    - echo "Проверка стиля кода..."
+    - docker run --rm testing-backend-image sh -c "pip install flake8 && python -m flake8 . --exit-zero"
 
-
-
-
-
+# 4. Деплой через Ansible
+deploy-job:
+  extends: .docker_base_template
+  stage: deploy
+  before_script:
+    # Устанавливаем SSH-клиент
+    - 'which ssh-agent || ( apk add --no-cache openssh-client )'
+    # Запускаем агент и добавляем приватный ключ
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    # Создаем папку .ssh и доверяем серверу
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - ssh-keyscan $SERVER_IP >> ~/.ssh/known_hosts
+  script:
+    - echo "Подготовка Ansible..."
+    - apk add --no-cache ansible
+    - ansible-galaxy collection install community.docker
+    - echo "Запуск деплоя на $SERVER_IP..."
+    # ЗАМЕНИЛИ localhost на $SERVER_IP. Деплой пойдет через SSH.
+    - ansible-playbook -i "$SERVER_IP," deploy.yml -u ubuntu12
 
 
 
